@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#173b32">
+    <title>Entregas | Central de operações</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#inicio" data-view="dashboard" aria-label="Entregas, início">
+          <span class="brand-mark">E</span>
+          <span class="brand-name">entregas<span class="brand-period">.</span></span>
+        </a>
+        <div class="workspace-label">AMBIENTE DE OPERAÇÃO</div>
+        <div class="workspace"><span class="workspace-dot"></span> Brasília · Centro</div>
+        <nav class="main-nav" aria-label="Navegação principal">
+          <div class="nav-label">GERENCIAR</div>
+          <button class="nav-item is-active" data-view="dashboard"><span class="nav-glyph">01</span> Visão geral</button>
+          <button class="nav-item" data-view="deliveries"><span class="nav-glyph">02</span> Entregas <span class="nav-count" id="nav-delivery-count">0</span></button>
+          <button class="nav-item" data-view="couriers"><span class="nav-glyph">03</span> Entregadores</button>
+          <div class="nav-label nav-label-spaced">AÇÕES</div>
+          <button class="nav-item nav-create" data-view="new-delivery"><span class="nav-glyph">+</span> Nova entrega</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="connection-status"><span class="status-pulse"></span><span id="connection-label">Conectando à API</span></div>
+          <div class="sidebar-caption">PAINEL DE DESENVOLVIMENTO</div>
+          <div class="sidebar-version">Entregas API <span>v0.1.0</span></div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Operação</span><span class="breadcrumb-divider">/</span><strong id="breadcrumb-current">Visão geral</strong></div>
+          <div class="topbar-actions">
+            <label class="api-key-control" for="api-key"><span>CHAVE API</span><input id="api-key" type="password" value="dev-key-123" autocomplete="off" aria-label="Chave de API"></label>
+            <button class="button button-quiet button-small" id="refresh-button" type="button" title="Atualizar dados">Atualizar</button>
+          </div>
+        </header>
+
+        <div class="content-wrap">
+          <section class="view is-visible" id="view-dashboard" aria-labelledby="dashboard-title">
+            <div class="page-heading heading-with-action">
+              <div><div class="eyebrow"><span class="eyebrow-line"></span> SÁBADO, 10 OUTUBRO 2026</div><h1 id="dashboard-title">Central de operações</h1><p class="page-subtitle">Acompanhe sua operação de entregas em tempo real.</p></div>
+              <button class="button button-primary" data-view="new-delivery" type="button"><span class="button-plus">+</span> Criar entrega</button>
+            </div>
+
+            <div class="metric-grid" aria-label="Resumo da operação">
+              <article class="metric"><div class="metric-top"><span class="metric-label">TOTAL DE ENTREGAS</span><span class="metric-index">01</span></div><div class="metric-value" id="metric-total">—</div><div class="metric-foot"><span class="metric-foot-dot dot-green"></span>Na sua operação</div></article>
+              <article class="metric"><div class="metric-top"><span class="metric-label">AGUARDANDO DESPACHO</span><span class="metric-index">02</span></div><div class="metric-value" id="metric-pending">—</div><div class="metric-foot"><span class="metric-foot-dot dot-yellow"></span>Precisam de entregador</div></article>
+              <article class="metric"><div class="metric-top"><span class="metric-label">EM ROTA</span><span class="metric-index">03</span></div><div class="metric-value" id="metric-route">—</div><div class="metric-foot"><span class="metric-foot-dot dot-blue"></span>Com o cliente em breve</div></article>
+              <article class="metric metric-dark"><div class="metric-top"><span class="metric-label">ENTREGADORES</span><span class="metric-index">04</span></div><div class="metric-value" id="metric-couriers">—</div><div class="metric-foot"><span class="metric-foot-dot dot-lime"></span><span id="metric-courier-note">Disponíveis agora</span></div></article>
+            </div>
+
+            <div class="dashboard-grid">
+              <section class="section-block recent-section">
+                <div class="section-heading"><div><div class="eyebrow">ACOMPANHAMENTO</div><h2>Entregas recentes</h2></div><button class="text-button" data-view="deliveries" type="button">Ver todas <span>→</span></button></div>
+                <div id="recent-deliveries" class="table-wrap"></div>
+              </section>
+              <section class="section-block map-section">
+                <div class="section-heading"><div><div class="eyebrow">LOGÍSTICA EM MAPA</div><h2>Rotas ativas</h2></div><span class="live-tag"><span></span><span id="map-route-count">0 ROTAS</span></span></div>
+                <div class="map-frame"><div class="service-map" id="service-map" role="application" aria-label="Mapa de rotas e entregadores"></div><div class="map-empty" id="map-empty">Nenhuma rota ativa no momento</div></div>
+                <div class="map-legend"><span><i class="legend-swatch legend-own"></i> Frota própria</span><span><i class="legend-swatch legend-third"></i> Terceiro expresso</span><span><i class="legend-swatch legend-pickup"></i> Coleta</span><span><i class="legend-swatch legend-dropoff"></i> Entrega</span></div>
+                <div class="map-caption"><span id="map-summary">Aguardando planejamento</span><span>OSM · sem trânsito ao vivo</span></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="view" id="view-deliveries" aria-labelledby="deliveries-title" hidden>
+            <div class="page-heading heading-with-action"><div><div class="eyebrow"><span class="eyebrow-line"></span> OPERAÇÃO</div><h1 id="deliveries-title">Entregas</h1><p class="page-subtitle">Consulte status, acompanhe eventos e avance cada entrega.</p></div><button class="button button-primary" data-view="new-delivery" type="button"><span class="button-plus">+</span> Criar entrega</button></div>
+            <div class="toolbar-row"><label class="search-control"><span class="search-symbol">⌕</span><input id="delivery-search" type="search" placeholder="Buscar por pedido ou endereço" aria-label="Buscar entregas"></label><label class="filter-control"><span>STATUS</span><select id="delivery-filter"><option value="">Todos os status</option><option value="procurando_entregador">Aguardando entregador</option><option value="entregador_atribuido">Entregador atribuído</option><option value="coletada">Coletada</option><option value="em_rota">Em rota</option><option value="entregue">Entregue</option><option value="falhou">Falhou</option><option value="devolvendo">Devolvendo</option><option value="devolvida">Devolvida</option><option value="cancelada">Cancelada</option></select></label></div>
+            <div id="all-deliveries" class="table-wrap table-large"></div>
+          </section>
+
+          <section class="view" id="view-new-delivery" aria-labelledby="new-delivery-title" hidden>
+            <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> NOVA SOLICITAÇÃO</div><h1 id="new-delivery-title">Criar entrega</h1><p class="page-subtitle">A origem é fixa; distância e previsão de chegada são calculadas automaticamente pelo destino.</p></div></div>
+            <form id="quote-form" class="form-layout">
+              <div class="form-main">
+                <section class="form-section"><div class="form-section-heading"><span class="step-number">01</span><div><h2>Coleta</h2><p>Ponto de despacho cadastrado da empresa.</p></div></div>
+                  <div class="form-grid"><input type="hidden" name="coleta_endereco" id="pickup-address"><div class="fixed-origin field-wide"><span class="field-label">ORIGEM FIXA · DISPPAR AUTOPEÇAS</span><strong id="pickup-origin-name">Disppar Autopeças - Paranoá</strong><address id="pickup-origin-address">QD. 34 Conj. C Lote 25 - Paranoá, Brasília - DF, 71573-403</address></div><label class="field"><span>CONTATO NA COLETA</span><input name="coleta_nome" value="Expedição Disppar Autopeças - Paranoá" required placeholder="Responsável pela expedição"></label><label class="field"><span>TELEFONE DA EXPEDIÇÃO</span><input name="coleta_telefone" value="" required minlength="8" type="tel" placeholder="(61) 99999-0000"></label></div>
+                </section>
+                <section class="form-section"><div class="form-section-heading"><span class="step-number">02</span><div><h2>Destino</h2><p>Para onde a entrega deve ir?</p></div></div>
+                  <div class="form-grid"><label class="field"><span>REGIÃO DE ENTREGA</span><select name="destino_regiao"><option value="paranoa">Paranoá</option><option value="itapoa">Itapoã</option></select></label><label class="field"><span>CEP (OPCIONAL · 8 NÚMEROS)</span><input name="entrega_cep" inputmode="numeric" placeholder="00000-000 ou 00000000"></label><div class="field field-wide destination-address-field"><label for="delivery-address">ENDEREÇO DE ENTREGA</label><input name="entrega_endereco" id="delivery-address" value="" required minlength="3" placeholder="Rua, quadra, conjunto ou lote"><div class="address-map-actions"><button class="text-button" id="choose-destination-map" type="button">Escolher ponto no mapa</button><output id="destination-pin-status" aria-live="polite"></output></div><input type="hidden" name="destino_lat"><input type="hidden" name="destino_lng"></div><label class="field"><span>NOME DO RECEBEDOR</span><input name="entrega_nome" value="Oficina" required placeholder="Quem vai receber o pacote"></label><label class="field"><span>TELEFONE</span><input name="entrega_telefone" value="61988880000" required minlength="8" type="tel" placeholder="(61) 98888-0000"></label></div>
+                </section>
+                <section class="form-section"><div class="form-section-heading"><span class="step-number">03</span><div><h2>Pedido e logística</h2><p>O pedido é planejado pela distância e pelo tempo de rota.</p></div></div>
+                  <div class="form-grid"><label class="field field-wide"><span>DESCRIÇÃO DO ITEM</span><input name="item_descricao" value="Peças automotivas" required minlength="1" placeholder="Ex.: filtro de óleo"></label><label class="field"><span>QUANTIDADE DE VOLUMES</span><input name="item_quantidade" type="number" value="1" required min="1" step="1"></label><label class="field"><span>MODALIDADE DE ENTREGA</span><select name="forma_entrega"><option value="propria">Frota própria · horário padrão</option><option value="terceiro_express">Terceiro expresso · pagamento externo</option></select></label><label class="field"><span>NÚMERO DO PEDIDO</span><input name="pedido_externo_id" required value="PED-001" placeholder="Referência do seu sistema"></label><label class="field"><span>VENDEDOR RESPONSÁVEL</span><input name="vendedor_nome" required minlength="1" placeholder="Nome de quem vendeu o pedido"></label><label class="field field-wide" id="selected-courier-field"><span>MOTOBOY RESPONSÁVEL</span><select name="entregador_id" id="selected-courier"><option value="">Despacho automático · menor tempo estimado</option></select></label></div>
+                </section>
+                <div class="form-actions"><span class="form-note">A previsão é atualizada ao informar o destino. A opção expresso é paga diretamente ao terceiro.</span><button class="button button-secondary" type="submit">Atualizar rota <span>→</span></button></div>
+              </div>
+              <aside class="quote-aside" id="quote-panel"><div class="quote-empty"><span class="quote-empty-mark">ETA</span><h2>Previsão automática</h2><p>Informe o endereço de entrega para calcular a rota, a distância e o horário estimado.</p></div></aside>
+            </form>
+          </section>
+
+          <section class="view" id="view-couriers" aria-labelledby="couriers-title" hidden>
+            <div class="page-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> EQUIPE DE CAMPO</div><h1 id="couriers-title">Entregadores</h1><p class="page-subtitle">Cadastre os motoboys próprios com endereço-base para ordenar entregas por tempo de deslocamento.</p></div></div>
+            <div class="courier-layout">
+              <section class="form-section courier-form-section"><div class="section-heading"><div><div class="eyebrow">FROTA PRÓPRIA</div><h2>Novo motoboy</h2></div></div><form id="courier-form" class="stacked-form"><label class="field"><span>NOME COMPLETO</span><input name="nome" required placeholder="Nome do entregador"></label><label class="field"><span>TELEFONE</span><input name="telefone" required minlength="8" type="tel" placeholder="(61) 99999-0000"></label><label class="field"><span>ENDEREÇO-BASE</span><input name="base_endereco" required minlength="3" placeholder="Endereço onde começa o turno"></label><input name="veiculo" type="hidden" value="moto"><button class="button button-primary" type="submit">Cadastrar motoboy <span>→</span></button></form></section>
+              <section class="section-block fleet-section"><div class="section-heading"><div><div class="eyebrow">FROTA</div><h2>Equipe cadastrada</h2></div><span class="fleet-total" id="courier-total">0 entregadores</span></div><div id="courier-list" class="table-wrap"></div>
+                <form id="position-form" class="position-form"><div class="position-title"><span class="position-indicator"></span><div><strong>Atualizar localização</strong><span>Capture o GPS no celular do motoboy para recalcular o trecho restante.</span></div></div><label class="field"><span>MOTOBOY</span><select name="entregador_id" id="position-courier" required><option value="">Selecione</option></select></label><label class="field"><span>ENDEREÇO ATUAL (ALTERNATIVA)</span><input name="endereco" minlength="3" placeholder="Rua, número, bairro, cidade e UF"></label><button class="button button-secondary" id="capture-gps-button" type="button">Capturar GPS do aparelho</button><button class="button button-secondary" type="submit">Salvar endereço</button><input type="hidden" name="gps_lat"><input type="hidden" name="gps_lng"><input type="hidden" name="gps_accuracy"></form><output class="gps-status" id="gps-status" aria-live="polite">O GPS do navegador ainda não foi capturado.</output>
+              </section>
+            </div>
+          </section>
+          <footer class="page-footer"><span>Entregas API · Ambiente de desenvolvimento</span><span id="last-updated">Aguardando dados</span></footer>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="destination-map-dialog" class="destination-dialog"><div class="destination-dialog-content"><div class="dialog-top"><div><div class="eyebrow">LOCALIZAÇÃO MANUAL</div><h2>Marque o destino no mapa</h2><span class="cell-secondary">Use esta opção se o endereço não aparecer na busca.</span></div><button class="dialog-close" type="button" data-close-destination-map aria-label="Fechar">×</button></div><div id="destination-map" aria-label="Mapa para selecionar o ponto de entrega"></div><div class="destination-map-footer"><span id="destination-map-message">Clique no ponto de entrega.</span><button class="button button-primary" id="confirm-destination-pin" type="button" disabled>Usar este ponto</button></div></div></dialog>
+    <dialog id="delivery-dialog" class="delivery-dialog"><div id="delivery-detail"></div></dialog>
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
